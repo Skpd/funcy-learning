@@ -1,5 +1,3 @@
-
-
 from bs4 import BeautifulSoup
 import requests
 import csv
@@ -7,20 +5,19 @@ import argparse
 
 
 def main():
-
     parser = argparse.ArgumentParser()
-    parser.add_argument('-fr','--from', default=0 , type=int, dest = 'start')
-    parser.add_argument('-to', '--to', type=int, required = True)
-    parser.add_argument('-out', '--output', default = 'results.csv')
+    parser.add_argument('-f', '--from', default=0, type=int)
+    parser.add_argument('-t', '--to', type=int, required=True)
+    parser.add_argument('-o', '--output', default='results.csv')
 
-    args = parser.parse_args()
+    args = dict(parser.parse_args().__dict__)
 
-    with open( args.output , 'w') as csvfile:
+    with open(args['output'], 'w') as csvfile:
         resultwriter = csv.writer(csvfile)
 
         print('Progress:')
 
-        for x in range (args.start , args.to + 1):
+        for x in range(args['from'], args['to'] + 1):
             player_id = "http://www.roswar.ru/player/{}/".format(x)
             r = requests.get(player_id)
             soup = BeautifulSoup(r.text, "html.parser")
@@ -33,6 +30,7 @@ def main():
                 level = a.find('span').get_text().strip('[]')
                 resultwriter.writerow([x, name, level, alignment])
                 print(x, 'done')
+
 
 if __name__ == '__main__':
     main()
