@@ -9,8 +9,8 @@ import argparse
 def main():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-st','--start', default=0 , type=int)
-    parser.add_argument('-en', '--end', type=int, required = True)
+    parser.add_argument('-fr','--from', default=0 , type=int, dest = 'start')
+    parser.add_argument('-to', '--to', type=int, required = True)
     parser.add_argument('-out', '--output', default = 'results.csv')
 
     args = parser.parse_args()
@@ -20,7 +20,7 @@ def main():
 
         print('Progress:')
 
-        for x in range (args.start, args.end + 1):
+        for x in range (args.start , args.to + 1):
             player_id = "http://www.roswar.ru/player/{}/".format(x)
             r = requests.get(player_id)
             soup = BeautifulSoup(r.text, "html.parser")
