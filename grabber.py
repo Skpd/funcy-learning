@@ -20,6 +20,7 @@ def main():
         for x in range(args['from'], args['to'] + 1):
             player_id = "http://www.roswar.ru/player/{}/".format(x)
             r = requests.get(player_id)
+            r.encoding = 'utf-8'
             result = parse_html(html=r.text)
             if 'name' in result and 'level' in result and 'alignment' in result:
                 resultwriter.writerow([x, result['name'], result['level'], result['alignment']])
@@ -32,7 +33,7 @@ def parse_html(html: str):
     a = soup.find('span', class_="user")
     if a is not None:
         out['alignment'] = a.find('i')['class'][0]
-        out['name'] = a.select_one('a[href^="/player"]').get_text().strip()
+        out['name'] = a.select_one('a[href^="/player"]').get_text()
         out['level'] = a.find('span').get_text().strip('[]')
     return out
 
