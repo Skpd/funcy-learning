@@ -21,6 +21,7 @@ class TestPlayerParsing(unittest.TestCase):
             self.assertEqual('14', r['level'])
             self.assertEqual(' Anna I', r['name'])
 
+
     def test_rus(self):
         with codecs.open('tests/rus-noclan.htm', 'r') as f:
             data = f.read()
@@ -28,6 +29,15 @@ class TestPlayerParsing(unittest.TestCase):
             self.assertEqual('resident', r['alignment'])
             self.assertEqual('7', r['level'])
             self.assertEqual(' Евгений11', r['name'])
+            self.assertEqual('54', r['health'])
+            self.assertEqual('52', r['strength'])
+            self.assertEqual('61', r['dexterity'])
+            self.assertEqual('47', r['resistance'])
+            self.assertEqual('69', r['intuition'])
+            self.assertEqual('73', r['attention'])
+            self.assertEqual('47', r['charism'])
+            self.assertEqual('', r['clan'])
+
 
     def test_nodata(self):
         with open('tests/nodata.rtf', 'r') as f:
@@ -36,6 +46,12 @@ class TestPlayerParsing(unittest.TestCase):
             self.assertNotIn('alignment', r)
             self.assertNotIn('level', r)
             self.assertNotIn('name', r)
+
+    def test_noalig(self):
+        with open('tests/eng-noalig.htm','r') as f:
+            data = f.read()
+            r = parse_html(data)
+            self.assertEqual(None, r['alignment'])
 
 
 if __name__ == '__main__':
