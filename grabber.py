@@ -1,8 +1,8 @@
 from bs4 import BeautifulSoup
 import requests
-import csv
 import argparse
 import pymysql.cursors
+
 
 
 def main():
@@ -27,6 +27,7 @@ def main():
         result = parse_html(html=r.text)
         result['id'] = x
         if len(result.keys()) != 12:
+            print(x,'was not found')
             continue
 
         sel_cursor = conn.cursor()
@@ -42,6 +43,7 @@ def main():
                 result
             )
             conn.commit()
+            print(x, 'existing player')
         else:
             conn.cursor().execute(
                 'UPDATE roswar.players '
@@ -49,8 +51,7 @@ def main():
                 'resistance = %(resistance)s, intuition = %(intuition)s, attention = %(attention)s, charism = %(charism)s',
                 result
             )
-
-        print(x, 'written to db')
+            print(x, 'new player added to db')
     conn.close()
 
 
