@@ -127,7 +127,7 @@ def main():
 def parse_html(html: str):
     out = {}
 
-    soup = BeautifulSoup(html, "html.parser")
+    soup = BeautifulSoup(html, "html5lib")
     a = soup.find('span', class_="user")
     if a is not None:
 
@@ -152,29 +152,33 @@ def parse_html(html: str):
 
         out['items'] = []
 
-        for x in range(1, 11):
-            a = soup.find('ul', class_="slots").find_all('li', class_="slot{}".format(x))
-            if len(a) == 1:
-                item = a[0].find('img')
-            else:
-                item = None
+        for x in range (1,11):
+            a = soup.find('ul', class_="slots").find_all('li', class_ ='slot{}'.format(x))
 
-            if item is None:
-                continue
+        # if len(a) == 1:
+        #     item = a[0].find('img')
+        # else:
+        #     item = None
+        #
+        # if item is None:
+        #     continue
 
-            item_info = {}
-            if item.attrs.get('data-type') is not None:
-                slot_item_type = item.attrs.get('data-type')
-                slot_item_mf = item.attrs.get('data-mf')
-                slot_item_name = item.attrs.get('src').replace('/@/images/obj/', '').rstrip('png.jpe')
-                item_info['mf'] = slot_item_mf
-                item_info['type'] = slot_item_type
-                item_info['name'] = slot_item_name
-            else:
-                item_info['mf'] = 0
-                item_info['type'] = 'slot{}'.format(x)
-                item_info['name'] = ''
-            out['items'].append(item_info)
+            for item in a:
+                img = item.find('img')
+                item_info = {}
+
+                if img is not None:
+                    slot_item_type = img.attrs.get('data-type')
+                    slot_item_mf = img.attrs.get('data-mf')
+                    slot_item_name = img.attrs.get('src').replace('/@/images/obj/', '').rstrip('png.jpe')
+                    item_info['mf'] = slot_item_mf
+                    item_info['type'] = slot_item_type
+                    item_info['name'] = slot_item_name
+                else:
+                    item_info['mf'] = '0'
+                    item_info['type'] = 'slot{}'.format(x)
+                    item_info['name'] = ''
+                out['items'].append(item_info)
 
 
     return out
