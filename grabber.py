@@ -72,21 +72,19 @@ def main():
 
             )
 
-            for k in range (0,11):
-                while result['items'][k] is not None:
-                    conn.cursor().execute(
-                        "INSERT INTO roswar.playersitems "
-                        "(player_id, name, type, mf) VALUES (%(player_id)s, %(name)s, %(type)s, %(mf)s)",
-                        {
-                            'player_id': result['player_id'],
-                            'name': result['items'][k]['name'],
-                            'type': result['items'][k]['type'],
-                            'mf': result['items'][k]['mf'],
+            for x in range(0, len(result['items'])):
+                conn.cursor().execute(
+                    "INSERT INTO roswar.playersitems "
+                    "(player_id, name, type, mf) VALUES (%(player_id)s, %(name)s, %(type)s, %(mf)s)",
+                    {
+                        'player_id': result['player_id'],
+                        'name': result['items'][x]['name'],
+                        'type': result['items'][x]['type'],
+                        'mf': result['items'][x]['mf'],
 
-                        }
+                    }
 
-                    )
-
+                )
             conn.commit()
             logger.debug('{} new player added to db'.format(player_id))
         else:
@@ -110,19 +108,18 @@ def main():
 
             )
 
-            '''f or x in range(1, 11):
-            conn.cursor().execute(
-                "UPDATE roswar.playersitems "
-                "(SET player_id = %(player_id)s, name = %(name)s, type = %(type)s, mf = %(mf)s)",
-                {
-                    'player_id': result['player_id'],
-                    'name': result['items'][0]['name'],
-                    'type': result['items'][0]['type'],
-                    'mf': result['items'][0]['mf'],
+            for x in range(0, len(result['items'])):
+                conn.cursor().execute(
+                    'UPDATE roswar.playersitems '
+                    'SET name = %(name)s, type = %(type)s, mf = %(mf)s',
+                    {
+                        'name': result['items'][x]['name'],
+                        'type': result['items'][x]['type'],
+                        'mf': result['items'][x]['mf'],
 
-                }
+                    }
 
-                )'''
+                    )
             logger.debug('{} existing player updated'.format(player_id))
     conn.close()
 
@@ -151,29 +148,38 @@ def parse_html(html: str):
         for item in a:
             stat_name = item.attrs.get('data-type')
             stat_value = item.find('span', class_="num").get_text()
-            out.update({stat_name: stat_value})
+            out[stat_name] = stat_value
 
         out['items'] = []
+
         for x in range(1, 11):
             a = soup.find('ul', class_="slots").find_all('li', class_="slot{}".format(x))
-            if len(a[0]) == 1:
-                for item in a[0]:
-                    item_info = {}
-                    if item.attrs.get('data-type') is not None:
-                        slot_item_type = item.attrs.get('data-type')
-                        slot_item_mf = item.attrs.get('data-mf')
-                        slot_item_name = item.attrs.get('src').replace('/@/images/obj/', '').rstrip('png.jpe')
-                        item_info['mf'] = slot_item_mf
-                        item_info['type'] = slot_item_type
-                        item_info['name'] = slot_item_name
-                    out['items'].append(item_info)
-    # print(out)
+            if len(a) == 1:
+                item = a[0].find('img')
+            else:
+                item = None
+
+            if item is None:
+                continue
+
+            item_info = {}
+            if item.attrs.get('data-type') is not None:
+                slot_item_type = item.attrs.get('data-type')
+                slot_item_mf = item.attrs.get('data-mf')
+                slot_item_name = item.attrs.get('src').replace('/@/images/obj/', '').rstrip('png.jpe')
+                item_info['mf'] = slot_item_mf
+                item_info['type'] = slot_item_type
+                item_info['name'] = slot_item_name
+            else:
+                item_info['mf'] = 0
+                item_info['type'] = 'slot{}'.format(x)
+                item_info['name'] = ''
+            out['items'].append(item_info)
+
 
     return out
-# {id:675, 'items': [{'type':'talisman', 'item_id':'amulet/17','mf':'0','description':'kkk'}]}
 
 
 if __name__ == '__main__':
-    # logging.info('Process starts')
 
     main()
