@@ -1,0 +1,29 @@
+from sqlalchemy import String, Integer, Column, Enum
+from sqlalchemy.orm import relationship
+from models import Base
+
+
+
+class Player(Base):
+    __tablename__ = 'players'
+
+    player_id = Column(Integer, primary_key=True, nullable=False)
+    name = Column(String, default=None)
+    level = Column(Integer)
+    alignment = Column(Enum('arrived','resident'), default=None)
+    clan = Column(String, default=None) #(Integer, ForeignKey('clans.clan_id')
+    health = Column(Integer, default=None)
+    strength = Column(Integer, default=None)
+    dexterity = Column(Integer, default=None)
+    resistance = Column(Integer, default=None)
+    intuition = Column(Integer, default=None)
+    attention = Column(Integer, default=None)
+    charism = Column(Integer, default=None)
+
+    items = relationship("Item")
+
+    def update(self, **kwargs):
+        for k, v in kwargs.items():
+            if getattr(self, k, None):
+                setattr(self, k, v)
+

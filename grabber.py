@@ -1,11 +1,13 @@
 from bs4 import BeautifulSoup
 import grequests
 import argparse
-import pymysql.cursors
 import re
 import logging
-# import sqlalchemy
-# from sqlalchemy import create_engine
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from models.player import Player
+from models.item import Item
+from sqlalchemy.orm import sessionmaker
 
 
 def main():
@@ -18,9 +20,14 @@ def main():
 
     args = dict(parser.parse_args().__dict__)
 
-    # e = create_engine('mysql://root:new_password:@localhost/foo', , echo=True)
+    # conn = pymysql.connect(host='localhost', user='root', password='new_password', charset='utf8')
 
-    conn = pymysql.connect(host='localhost', user='root', password='new_password', charset='utf8')
+    base = declarative_base()
+    engine = create_engine('mysql+pymysql://root:new_password@localhost/roswar?charset=utf8mb4')
+    base.metadata.bind = engine
+    db_session = sessionmaker(bind=engine)
+    session = db_session()
+    base.metadata.create_all(engine)
 
     urls = []
     for x in range(args['from'], args['to'] + 1):
@@ -44,84 +51,44 @@ def main():
             logger.debug('{} was not found'.format(player_id))
             continue
 
-        sel_cursor = conn.cursor()
-        sel_cursor.execute('SELECT * FROM roswar.players WHERE player_id = %s', result['player_id'])
-        existing_player = sel_cursor.fetchone()
+        existing_player = session.query(Player).filter(Player.player_id == result['player_id']).first()
 
         if existing_player is None:
-            conn.cursor().execute(
-                "INSERT INTO roswar.players "
-                "(player_id, name,level, clan, alignment, health, strength, dexterity, resistance, intuition, "
-                "attention, charism) VALUES (%(player_id)s, %(name)s, %(level)s, %(clan)s, %(alignment)s, %(health)s, "
-                "%(strength)s, %(dexterity)s, %(resistance)s, %(intuition)s, %(attention)s, %(charism)s)",
-                {
-                    'player_id': result['player_id'],
-                    'name': result['name'],
-                    'alignment': result['alignment'],
-                    'level': result['level'],
-                    'clan': result['clan'],
-                    'health': result['health'],
-                    'strength': result['strength'],
-                    'dexterity': result['dexterity'],
-                    'resistance': result['resistance'],
-                    'intuition': result['intuition'],
-                    'attention': result['attention'],
-                    'charism': result['charism']
+            player_fields = result
+            new_items = player_fields.pop('items')
+            new_player = Player(**player_fields)
+            session.add(new_player)
 
-                }
+            for x in range(0, len(new_items)):
+                one_item = new_items[x]
+                players_new_item = Item(**one_item)
+                new_player.items.append(players_new_item)
+                session.add(new_player)
 
-            )
-
-            for x in range(0, len(result['items'])):
-                conn.cursor().execute(
-                    "INSERT INTO roswar.playersitems "
-                    "(player_id, name, type, mf) VALUES (%(player_id)s, %(name)s, %(type)s, %(mf)s)",
-                    {
-                        'player_id': result['player_id'],
-                        'name': result['items'][x]['name'],
-                        'type': result['items'][x]['type'],
-                        'mf': result['items'][x]['mf'],
-
-                    }
-
-                )
-            conn.commit()
+            session.commit()
             logger.debug('{} new player added to db'.format(player_id))
+
         else:
-            conn.cursor().execute(
-                'UPDATE roswar.players '
-                'SET level = %(level)s, clan = %(clan)s, health = %(health)s, strength = %(strength)s, '
-                'dexterity = %(dexterity)s, resistance = %(resistance)s, intuition = %(intuition)s, '
-                'attention = %(attention)s, charism = %(charism)s',
-                {
-                    'level': result['level'],
-                    'clan': result['clan'],
-                    'health': result['health'],
-                    'strength': result['strength'],
-                    'dexterity': result['dexterity'],
-                    'resistance': result['resistance'],
-                    'intuition': result['intuition'],
-                    'attention': result['attention'],
-                    'charism': result['charism']
+            player_fields = result
+            players_items_list = player_fields.pop('items')
+            existing_player.update(**player_fields)
 
-                }
+            items_from_bd = existing_player.items
+            for x in range(0, len(players_items_list)):
+                one_existing_item = players_items_list[x]
 
-            )
+                for x in range(0, len(items_from_bd)):
+                    item_from_bd = items_from_bd[x]
+                    if item_from_bd.type == one_existing_item['type']:
+                        item_from_bd.update(**one_existing_item)
+                    else:
+                        x = x+1
 
-            for x in range(0, len(result['items'])):
-                conn.cursor().execute(
-                    'UPDATE roswar.playersitems '
-                    'SET name = %(name)s, type = %(type)s, mf = %(mf)s',
-                    {
-                        'name': result['items'][x]['name'],
-                        'type': result['items'][x]['type'],
-                        'mf': result['items'][x]['mf'],
+            session.commit()
 
-                    }
-
-                    )
             logger.debug('{} existing player updated'.format(player_id))
-    conn.close()
+
+        session.close()
 
 
 def parse_html(html: str):
@@ -152,16 +119,8 @@ def parse_html(html: str):
 
         out['items'] = []
 
-        for x in range (1,11):
-            a = soup.find('ul', class_="slots").find_all('li', class_ ='slot{}'.format(x))
-
-        # if len(a) == 1:
-        #     item = a[0].find('img')
-        # else:
-        #     item = None
-        #
-        # if item is None:
-        #     continue
+        for x in range(1, 11):
+            a = soup.find('ul', class_="slots").find_all('li', class_='slot{}'.format(x))
 
             for item in a:
                 img = item.find('img')
@@ -180,7 +139,7 @@ def parse_html(html: str):
                     item_info['name'] = ''
                 out['items'].append(item_info)
 
-
+    print(out)
     return out
 
 
