@@ -1,13 +1,15 @@
 from bs4 import BeautifulSoup
 import grequests
 import argparse
-import re
 import logging
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from models.player import Player
 from models.item import Item
+from models.clan import Clan
 from sqlalchemy.orm import sessionmaker
+import sys
+import re
 
 
 def main():
@@ -19,8 +21,6 @@ def main():
     parser.add_argument('-t', '--to', type=int, required=True)
 
     args = dict(parser.parse_args().__dict__)
-
-    # conn = pymysql.connect(host='localhost', user='root', password='new_password', charset='utf8')
 
     base = declarative_base()
     engine = create_engine('mysql+pymysql://root:new_password@localhost/roswar?charset=utf8mb4')
@@ -37,6 +37,7 @@ def main():
     rs = (grequests.get(u) for u in urls)
     complete_requests = grequests.map(rs, size=100)
 
+    missed_clans = []
     for r in complete_requests:
         if r is None:
             logger.warning('empty response')
@@ -52,6 +53,16 @@ def main():
             continue
 
         existing_player = session.query(Player).filter(Player.player_id == result['player_id']).first()
+
+        if result['clan_name'] is not None:
+            existing_clan = session.query(Clan).filter(Clan.name == result['clan_name']).first()
+            if existing_clan is not None:
+                result['clan_id'] = existing_clan.clan_id
+            else:
+                missed_clans.append(result['clan_id'])
+
+        else:
+            result['clan_id'] = None
 
         if existing_player is None:
             player_fields = result
@@ -77,7 +88,7 @@ def main():
             for x in range(0, len(players_items_list)):
                 one_existing_item = players_items_list[x]
 
-                for x in range(0, len(items_from_bd)):
+                for i in range(0, len(items_from_bd)):
                     item_from_bd = items_from_bd[x]
                     if item_from_bd.type == one_existing_item['type']:
                         item_from_bd.update(**one_existing_item)
@@ -89,6 +100,11 @@ def main():
             logger.debug('{} existing player updated'.format(player_id))
 
         session.close()
+
+    if missed_clans is not None:
+        for x in missed_clans:
+            print('Clan {} was not found. Update Clans table, please'.format(x))
+        sys.exit(13)
 
 
 def parse_html(html: str):
@@ -107,9 +123,13 @@ def parse_html(html: str):
         out['level'] = a.find('span').get_text().strip('[]')
 
         if a.select_one('a[href^="/clan"]') is not None:
-            out['clan'] = a.select_one('a[href^="/clan"]').find('img')['title']
+            out['clan_name'] = a.select_one('a[href^="/clan"]').find('img')['title']
+            href_with_clan_id = a.select_one('a[href^="/clan"]')['href']
+            out['clan_id'] = re.sub("\D", "", href_with_clan_id)
+            print('---------->>>>', out['clan_name'], out['clan_id'])
         else:
-            out['clan'] = ''
+            out['clan_name'] = None
+            out['clan_id'] = None
 
         a = soup.find('ul', class_="stats").find_all('li', class_="stat")
         for item in a:
@@ -139,7 +159,6 @@ def parse_html(html: str):
                     item_info['name'] = ''
                 out['items'].append(item_info)
 
-    print(out)
     return out
 
 

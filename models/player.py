@@ -1,4 +1,4 @@
-from sqlalchemy import String, Integer, Column, Enum
+from sqlalchemy import String, Integer, Column, Enum, ForeignKey
 from sqlalchemy.orm import relationship
 from models import Base
 
@@ -11,7 +11,8 @@ class Player(Base):
     name = Column(String, default=None)
     level = Column(Integer)
     alignment = Column(Enum('arrived','resident'), default=None)
-    clan = Column(String, default=None) #(Integer, ForeignKey('clans.clan_id')
+    clan_name = Column(String, default=None)
+    clan_id = Column(Integer, ForeignKey('clans.clan_id'))
     health = Column(Integer, default=None)
     strength = Column(Integer, default=None)
     dexterity = Column(Integer, default=None)
@@ -20,7 +21,9 @@ class Player(Base):
     attention = Column(Integer, default=None)
     charism = Column(Integer, default=None)
 
+
     items = relationship("Item")
+    clan = relationship("Clan")
 
     def update(self, **kwargs):
         for k, v in kwargs.items():

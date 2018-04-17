@@ -1,4 +1,4 @@
-from sqlalchemy import String, Integer, Column, Enum
+from sqlalchemy import String, Integer, Column
 from sqlalchemy.orm import relationship
 from models import Base
 
@@ -25,6 +25,8 @@ class Clan(Base):
     defence = Column(Integer)
     nonaggression_time = Column(String)
     relations = Column(String)
+
+    players = relationship("Player")
 
     def update(self, **kwargs):
         for k, v in kwargs.items():
