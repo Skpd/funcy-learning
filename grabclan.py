@@ -5,6 +5,8 @@ import re
 import logging
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
+from models.player import Player
+from models.item import Item
 from models.clan import Clan
 from sqlalchemy.orm import sessionmaker
 

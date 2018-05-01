@@ -1,3 +1,4 @@
+from flask import json
 from sqlalchemy import String, Integer, Column, ForeignKey
 from sqlalchemy.orm import relationship
 from models import Base
@@ -14,6 +15,8 @@ class Item(Base):
 
     player = relationship("Player")
 
+    def to_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
     def update (self, **kwargs):
         for k, v in kwargs.items():

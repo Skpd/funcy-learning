@@ -1,3 +1,4 @@
+from flask import json
 from sqlalchemy import String, Integer, Column
 from sqlalchemy.orm import relationship
 from models import Base
@@ -27,6 +28,9 @@ class Clan(Base):
     relations = Column(String)
 
     players = relationship("Player")
+
+    def to_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
     def update(self, **kwargs):
         for k, v in kwargs.items():

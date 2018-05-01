@@ -1,7 +1,7 @@
+from flask import json
 from sqlalchemy import String, Integer, Column, Enum, ForeignKey
 from sqlalchemy.orm import relationship
 from models import Base
-
 
 
 class Player(Base):
@@ -21,9 +21,13 @@ class Player(Base):
     attention = Column(Integer, default=None)
     charism = Column(Integer, default=None)
 
-
     items = relationship("Item")
     clan = relationship("Clan")
+
+
+
+    def to_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
     def update(self, **kwargs):
         for k, v in kwargs.items():
